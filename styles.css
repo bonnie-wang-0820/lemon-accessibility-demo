@@ -21,10 +21,12 @@
 
 body {
   margin: 0;
+  width: 100%;
   min-height: 100vh;
   color: var(--ink);
   background: #f5f4ef;
   font-family: var(--font-body);
+  overflow-x: hidden;
 }
 
 body.font-friendly {
@@ -87,6 +89,8 @@ button:focus-visible {
   grid-template-columns: minmax(0, 393px);
   gap: 0;
   padding: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .phone {
@@ -276,7 +280,8 @@ button:focus-visible {
 
 .onboarding-visual {
   display: block;
-  width: 375px;
+  width: calc(100% + 40px);
+  max-width: none;
   height: 500px;
   margin: -56px -20px 0;
   object-fit: cover;
@@ -284,7 +289,8 @@ button:focus-visible {
 
 .permission-visual {
   display: block;
-  width: 375px;
+  width: calc(100% + 40px);
+  max-width: none;
   height: 500px;
   margin: -56px -20px 0;
   object-fit: cover;
