@@ -3,13 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>无界柠檬 可交互演示</title>
+    <title>无界柠檬</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <main class="workspace">
+    <main class="workspace phone-only">
       <section class="phone" aria-label="无界柠檬可交互原型">
         <div id="app" class="app"></div>
+        <div id="voiceLayer" class="voice-layer" aria-live="polite"></div>
         <nav class="bottom-nav" aria-label="底部导航">
           <button type="button" data-route="home" aria-label="首页">
             <span class="nav-icon nav-home" aria-hidden="true"></span>
@@ -25,21 +26,6 @@
           </button>
         </nav>
       </section>
-      <aside class="notes">
-        <h1>无界柠檬</h1>
-        <p>景区无障碍友好度评分小程序网页演示。页面已改为真实组件，图片区域后续可继续替换成你的景区素材。</p>
-        <div class="current">
-          <span>当前页面</span>
-          <strong id="routeLabel">启动页</strong>
-        </div>
-        <div class="font-tools" aria-label="字体方案">
-          <span>字体方案</span>
-          <button type="button" data-font="friendly">圆润亲和</button>
-          <button class="active" type="button" data-font="clear">无障碍清晰</button>
-          <button type="button" data-font="young">活泼年轻</button>
-        </div>
-        <button class="reset" type="button" data-route="start">重新开始</button>
-      </aside>
     </main>
     <script src="./script.js"></script>
   </body>

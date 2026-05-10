@@ -1,7 +1,10 @@
 const app = document.querySelector("#app");
+const voiceLayer = document.querySelector("#voiceLayer");
 const routeLabel = document.querySelector("#routeLabel");
 const nav = document.querySelector(".bottom-nav");
 const fontTools = document.querySelector(".font-tools");
+
+const appPageRoutes = ["home", "map", "detail", "mission", "profile"];
 
 const state = {
   route: "start",
@@ -26,6 +29,11 @@ const state = {
   },
   draggingVoice: false,
   voiceMoved: false,
+  shareSheet: null,
+  commentSheet: false,
+  communityLiked: false,
+  communityComments: 12,
+  communityShares: 8,
   lightbox: null,
   ratings: {
     passage: 0,
@@ -162,8 +170,12 @@ function render(options = {}) {
   if (state.lightbox) {
     app.insertAdjacentHTML("beforeend", lightboxHtml());
   }
-  app.insertAdjacentHTML("beforeend", voiceWidgetsHtml());
-  routeLabel.textContent = labels[state.route] || "演示";
+  if (voiceLayer) {
+    voiceLayer.innerHTML = overlayWidgetsHtml();
+  }
+  if (routeLabel) {
+    routeLabel.textContent = labels[state.route] || "演示";
+  }
   updateNav();
   if (options.preserveScroll) {
     requestAnimationFrame(() => {
@@ -257,7 +269,11 @@ function renderPermission() {
 function renderHome() {
   return `
     <section class="page yellow-page">
-      <button class="city-picker" data-action="choose-city">⌖ ${state.city}</button>
+      <button class="city-picker" data-action="choose-city" aria-label="切换城市，当前城市${state.city}">
+        <span class="city-pin" aria-hidden="true">${iconSvg("location")}</span>
+        <span class="city-name">${state.city}</span>
+        <span class="city-switch">切换城市</span>
+      </button>
       <div class="top-row">
         <div>
           <h1 class="home-title">开启你的无障碍旅行之旅</h1>
@@ -465,6 +481,26 @@ function ratingBlock(item) {
   `;
 }
 
+function overlayWidgetsHtml() {
+  return `
+    ${appPageRoutes.includes(state.route) ? `<button class="page-share" data-action="open-global-share" aria-label="分享当前页面">${iconSvg("share")}</button>` : ""}
+    ${voiceWidgetsHtml()}
+    ${state.shareSheet ? shareSheetHtml() : ""}
+    ${state.commentSheet ? commentSheetHtml() : ""}
+  `;
+}
+
+function iconSvg(name) {
+  const icons = {
+    mic: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a3.5 3.5 0 0 0-3.5 3.5v5A3.5 3.5 0 0 0 12 15a3.5 3.5 0 0 0 3.5-3.5v-5A3.5 3.5 0 0 0 12 3Z"/><path d="M5.5 10.5a6.5 6.5 0 0 0 13 0M12 17v4M8.5 21h7"/></svg>`,
+    share: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4"/><path d="M7.5 8.5 12 4l4.5 4.5"/><path d="M5 12v6.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V12"/></svg>`,
+    heart: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.4 5.6a5 5 0 0 0-7.1 0L12 6.9l-1.3-1.3a5 5 0 0 0-7.1 7.1L12 21l8.4-8.3a5 5 0 0 0 0-7.1Z"/></svg>`,
+    comment: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v10H8l-4 3v-13Z"/><path d="M8 9h8M8 12h5"/></svg>`,
+    location: `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.3 6-11a6 6 0 0 0-12 0c0 5.7 6 11 6 11Z"/><circle cx="12" cy="10" r="2.2"/></svg>`
+  };
+  return icons[name] || "";
+}
+
 function voiceWidgetsHtml() {
   return `
     <button
@@ -473,7 +509,7 @@ function voiceWidgetsHtml() {
       data-action="toggle-voice-panel"
       data-draggable-voice="true"
       aria-label="语音操作模式"
-    >语</button>
+    >${iconSvg("mic")}</button>
     ${state.voicePanel ? `
       <section class="voice-panel" aria-label="语音操作面板">
         <div class="voice-panel-head">
@@ -499,6 +535,33 @@ function voiceWidgetsHtml() {
   `;
 }
 
+function shareSheetHtml() {
+  const isCommunity = state.shareSheet === "community";
+  return `
+    <div class="sheet-mask" data-action="close-sheet">
+      <section class="share-sheet" role="dialog" aria-label="分享">
+        <h3>分享到</h3>
+        <button data-action="share-wechat">微信</button>
+        ${isCommunity ? `<button data-action="share-community">社区内</button>` : ""}
+        <button class="sheet-cancel" data-action="close-sheet">取消</button>
+      </section>
+    </div>
+  `;
+}
+
+function commentSheetHtml() {
+  return `
+    <div class="sheet-mask" data-action="close-sheet">
+      <section class="comment-sheet" role="dialog" aria-label="评论互动">
+        <h3>评论这条评价</h3>
+        <textarea data-community-comment placeholder="写下你的看法，例如：这个信息对我很有帮助。"></textarea>
+        <button class="secondary" data-action="submit-community-comment">发布评论</button>
+        <button class="sheet-cancel" data-action="close-sheet">取消</button>
+      </section>
+    </div>
+  `;
+}
+
 function reviewPost(review) {
   return `
     <article class="post">
@@ -516,6 +579,8 @@ function reviewPost(review) {
 }
 
 function communityPost(review) {
+  const liked = state.communityLiked;
+  const likeCount = 36 + (liked ? 1 : 0);
   return `
     <article class="post">
       <div class="review-header">
@@ -529,9 +594,15 @@ function communityPost(review) {
       <p>${review.text}</p>
       ${reviewGallery(review, "community")}
       <div class="post-actions">
-        <button data-toast="已点赞">点赞</button>
-        <button data-toast="评论功能待接入">评论</button>
-        <button data-toast="已打开分享">分享</button>
+        <button class="social-action ${liked ? "liked" : ""}" data-action="toggle-community-like" aria-label="点赞">
+          ${iconSvg("heart")}<span>${likeCount}</span>
+        </button>
+        <button class="social-action" data-action="open-community-comment" aria-label="评论">
+          ${iconSvg("comment")}<span>${state.communityComments}</span>
+        </button>
+        <button class="social-action" data-action="open-community-share" aria-label="分享">
+          ${iconSvg("share")}<span>${state.communityShares}</span>
+        </button>
       </div>
     </article>
   `;
@@ -782,6 +853,9 @@ document.body.addEventListener("click", (event) => {
   const actionTarget = event.target.closest("[data-action]");
   if (!actionTarget) return;
   const action = actionTarget.dataset.action;
+  if (action === "close-sheet" && actionTarget.classList.contains("sheet-mask") && event.target !== actionTarget) {
+    return;
+  }
   if (action === "start-flow") setRoute("onboarding", { onboarding: 0 });
   if (action === "next-onboarding") {
     if (state.onboarding < 2) setRoute("onboarding", { onboarding: state.onboarding + 1 });
@@ -827,6 +901,46 @@ document.body.addEventListener("click", (event) => {
   if (action === "submit-review") {
     state.reviewDraft = "";
     toast("感谢您宝贵的评论，积分+10", { preserveScroll: true });
+  }
+  if (action === "open-global-share") {
+    state.shareSheet = "global";
+    state.commentSheet = false;
+    render({ preserveScroll: true });
+  }
+  if (action === "open-community-share") {
+    state.shareSheet = "community";
+    state.commentSheet = false;
+    render({ preserveScroll: true });
+  }
+  if (action === "share-wechat") {
+    const wasCommunityShare = state.shareSheet === "community";
+    state.shareSheet = null;
+    if (wasCommunityShare) state.communityShares += 1;
+    toast("已选择分享到微信", { preserveScroll: true });
+  }
+  if (action === "share-community") {
+    state.shareSheet = null;
+    state.communityShares += 1;
+    toast("已分享到社区内", { preserveScroll: true });
+  }
+  if (action === "open-community-comment") {
+    state.commentSheet = true;
+    state.shareSheet = null;
+    render({ preserveScroll: true });
+  }
+  if (action === "submit-community-comment") {
+    state.commentSheet = false;
+    state.communityComments += 1;
+    toast("评论已发布", { preserveScroll: true });
+  }
+  if (action === "toggle-community-like") {
+    state.communityLiked = !state.communityLiked;
+    render({ preserveScroll: true });
+  }
+  if (action === "close-sheet") {
+    state.shareSheet = null;
+    state.commentSheet = false;
+    render({ preserveScroll: true });
   }
   if (action === "toggle-voice-panel") {
     if (state.voiceMoved) {
@@ -896,9 +1010,10 @@ document.body.addEventListener("input", (event) => {
 document.body.addEventListener("pointerdown", (event) => {
   const target = event.target.closest("[data-draggable-voice]");
   if (!target) return;
+  const shell = document.querySelector(".phone").getBoundingClientRect();
   state.draggingVoice = {
-    offsetX: event.clientX - state.voicePos.x,
-    offsetY: event.clientY - state.voicePos.y,
+    offsetX: event.clientX - shell.left - state.voicePos.x,
+    offsetY: event.clientY - shell.top - state.voicePos.y,
     startX: event.clientX,
     startY: event.clientY
   };
@@ -933,14 +1048,16 @@ document.body.addEventListener("change", (event) => {
   }
 });
 
-fontTools.addEventListener("click", (event) => {
-  const target = event.target.closest("[data-font]");
-  if (!target) return;
-  document.body.classList.remove("font-friendly", "font-clear", "font-young");
-  document.body.classList.add(`font-${target.dataset.font}`);
-  fontTools.querySelectorAll("button").forEach((button) => {
-    button.classList.toggle("active", button === target);
+if (fontTools) {
+  fontTools.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-font]");
+    if (!target) return;
+    document.body.classList.remove("font-friendly", "font-clear", "font-young");
+    document.body.classList.add(`font-${target.dataset.font}`);
+    fontTools.querySelectorAll("button").forEach((button) => {
+      button.classList.toggle("active", button === target);
+    });
   });
-});
+}
 
 render();
